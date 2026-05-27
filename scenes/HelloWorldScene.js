@@ -60,7 +60,8 @@ export default class HelloWorldScene extends Phaser.Scene {
     // player setup
     this.player = this.physics.add.sprite(400, 480, 'player-square');
     this.player.setCollideWorldBounds(true);
-    this.player.body.setSize(40, 40);
+    this.player.setDisplaySize(60, 60);
+    this.player.body.setSize(60, 60);
     this.player.body.setGravityY(400);
     this.player.setBounce(0);
 
@@ -68,6 +69,13 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.physics.add.collider(this.player, groundLeft);
     this.physics.add.collider(this.player, groundCenter);
     this.physics.add.collider(this.player, groundRight);
+
+    // invisible side walls to keep falling objects inside the screen
+    const wallThickness = 20;
+    const leftWall = this.add.rectangle(-wallThickness / 2, 300, wallThickness, 600, 0x000000, 0);
+    const rightWall = this.add.rectangle(800 + wallThickness / 2, 300, wallThickness, 600, 0x000000, 0);
+    this.physics.add.existing(leftWall, true);
+    this.physics.add.existing(rightWall, true);
 
     // create two small platforms (same height and 1/3 thickness) placed above the main
     const smallHeight = Math.round(64 / 2); // approx one third of center thickness
@@ -93,6 +101,10 @@ export default class HelloWorldScene extends Phaser.Scene {
       if (!f) return;
       if (!f.getData('hasBounced')) {
         f.setData('hasBounced', true);
+        const kind = f.getData('kind');
+        if (kind !== 'circle') {
+          f.setData('scoreOnCatch', 2);
+        }
       } else {
         f.destroy();
       }
@@ -103,18 +115,28 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.physics.add.collider(this.fallers, groundRight, fallingGroundCollider);
     this.physics.add.collider(this.fallers, smallLeft, fallingGroundCollider);
     this.physics.add.collider(this.fallers, smallRight, fallingGroundCollider);
+    this.physics.add.collider(this.fallers, leftWall, this.handleSideWallCollision, null, this);
+    this.physics.add.collider(this.fallers, rightWall, this.handleSideWallCollision, null, this);
 
     // overlap: player catches any faller
     this.score = 0;
     this.scoreText = this.add.text(16, 16, 'Puntaje: 0', { fontSize: '24px', fill: '#000' });
+    this.timeLeft = 60;
+    this.timeText = this.add.text(784, 16, '60', { fontSize: '24px', fill: '#000' }).setOrigin(1, 0);
+    this.gameEnded = false;
+
     this.physics.add.overlap(this.player, this.fallers, (player, f) => {
-      const kind = f.getData('kind');
-      if (kind === 'triangle') this.score += 10;
-      else if (kind === 'circle') this.score -= 5;
-      else if (kind === 'square') this.score += 10;
-      else if (kind === 'diamond') this.score += 10;
+      const scoreOnCatch = f.getData('scoreOnCatch') || 0;
+      this.score += scoreOnCatch;
       this.scoreText.setText('Puntaje: ' + this.score);
       f.destroy();
+    });
+
+    this.timerEvent = this.time.addEvent({
+      delay: 1000,
+      callback: this.updateTimer,
+      callbackScope: this,
+      loop: true,
     });
 
     // spawn objects with an enforced delay between each appearance
@@ -128,7 +150,7 @@ export default class HelloWorldScene extends Phaser.Scene {
       square: 0,
       diamond: 0,
     };
-    this.time.delayedCall(3000, this.spawnFaller, [], this);
+    this.time.delayedCall(3500, this.spawnFaller, [], this);
 
     // input
     this.cursors = this.input.keyboard.createCursorKeys();
@@ -184,8 +206,9 @@ export default class HelloWorldScene extends Phaser.Scene {
 
     f.setData('isFalling', true);
     f.setData('kind', type);
+    f.setData('scoreOnCatch', type === 'circle' ? -5 : 5);
     f.setVelocity(Phaser.Math.Between(-20, 20), Phaser.Math.Between(50, 140));
-    f.setBounce(0.6);
+    f.setBounce(0, 0.6);
     f.setCollideWorldBounds(false);
     f.setData('hasBounced', false);
     f.body.setAllowGravity(true);
@@ -194,9 +217,49 @@ export default class HelloWorldScene extends Phaser.Scene {
     this.time.delayedCall(1000, this.spawnFaller, [], this);
   }
 
+  updateTimer() {
+    if (this.gameEnded) {
+      return;
+    }
+
+    this.timeLeft -= 1;
+    if (this.timeLeft <= 0) {
+      this.timeLeft = 0;
+      this.timeText.setText('0');
+      this.endGame();
+    } else {
+      this.timeText.setText(this.timeLeft.toString());
+    }
+  }
+
+  endGame() {
+    if (this.gameEnded) {
+      return;
+    }
+    this.gameEnded = true;
+    if (this.timerEvent) {
+      this.timerEvent.remove(false);
+    }
+    this.physics.pause();
+    this.scene.start('end', { score: this.score });
+  }
+
+  handleSideWallCollision(faller) {
+    if (!faller || !faller.getData || !faller.getData('isFalling')) {
+      return;
+    }
+    faller.setVelocityX(0);
+    const halfWidth = faller.displayWidth / 2;
+    if (faller.x < halfWidth) {
+      faller.x = halfWidth;
+    } else if (faller.x > 800 - halfWidth) {
+      faller.x = 800 - halfWidth;
+    }
+  }
+
   update() {
     // player movement with arrow keys
-    const speed = 250;
+    const speed = 375;
     if (this.cursors.left.isDown) {
       this.player.setVelocityX(-speed);
     } else if (this.cursors.right.isDown) {
