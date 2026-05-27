@@ -1,6 +1,6 @@
-export default class EndScene extends Phaser.Scene {
+export default class WinScene extends Phaser.Scene {
   constructor() {
-    super('end');
+    super('win');
   }
 
   init(data) {
@@ -10,7 +10,7 @@ export default class EndScene extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor('#344cb8');
 
-    this.add.text(400, 140, 'Perdiste', {
+    this.add.text(400, 140, 'Ganaste', {
       fontSize: '56px',
       color: '#000',
       fontStyle: 'bold',

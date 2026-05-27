@@ -1,5 +1,7 @@
 import StartScene from "./scenes/StartScene.js";
+import ControlsScene from "./scenes/ControlsScene.js";
 import HelloWorldScene from "./scenes/HelloWorldScene.js";
+import WinScene from "./scenes/WinScene.js";
 import EndScene from "./scenes/EndScene.js";
 
 // Create a new Phaser config object (moved here so `game.js` arranca el juego)
@@ -26,7 +28,7 @@ const config = {
       debug: false,
     },
   },
-  scene: [StartScene, HelloWorldScene, EndScene],
+  scene: [StartScene, ControlsScene, HelloWorldScene, WinScene, EndScene],
 };
 
 // Start the game

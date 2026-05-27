@@ -6,7 +6,7 @@ export default class StartScene extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor('#344cb8');
 
-    this.add.text(400, 180, 'Enkei Kiiro: El Ninja Moncho', {
+    this.add.text(400, 180, 'Atrapa las figuras', {
       fontSize: '64px',
       color: '#000',
       fontStyle: 'bold',
@@ -29,6 +29,25 @@ export default class StartScene extends Phaser.Scene {
 
     button.on('pointerout', () => {
       button.setFillStyle(0x000000, 0.85);
+    });
+
+    const controlsButton = this.add.rectangle(400, 410, 220, 70, 0x000000, 0.85).setStrokeStyle(2, 0xffffff);
+    const controlsButtonText = this.add.text(400, 410, 'controles', {
+      fontSize: '32px',
+      color: '#ffffff',
+    }).setOrigin(0.5);
+
+    controlsButton.setInteractive({ useHandCursor: true });
+    controlsButton.on('pointerdown', () => {
+      this.scene.start('controls');
+    });
+
+    controlsButton.on('pointerover', () => {
+      controlsButton.setFillStyle(0x333333, 0.95);
+    });
+
+    controlsButton.on('pointerout', () => {
+      controlsButton.setFillStyle(0x000000, 0.85);
     });
   }
 }
